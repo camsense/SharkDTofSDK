@@ -393,7 +393,24 @@ namespace CamsenseDTOF {
 		void calLidarParaBySpeed();
 		bool getHealthMsg(std::vector<UCHAR>& lstBuff);
 	public:
+		// OTA upgrade interface
+		bool otaUpgrade(const char* firmwareFilePath);
 
+	private:
+		// CRC-16/XMODEM calculation
+		unsigned short crc16Xmodem(unsigned char* ptr, int len);
+		
+		// Send command and wait for response
+		bool sendCommandAndWaitAck(const std::vector<UCHAR>& cmd, std::vector<UCHAR>& response, int timeout_ms);
+		
+		// Query device info (0x70)
+		bool queryDeviceInfo(std::string& model, std::string& version, int& mode);
+		
+		// Jump to boot mode (0xFA)
+		bool jumpToBootMode();
+		
+		// Send firmware data packet (0x73)
+		bool sendFirmwarePacket(UINT8 packetIndex, const UINT8* data, int dataLen, int& nextExpectedIndex);
 
 	};
 

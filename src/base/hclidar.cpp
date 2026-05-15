@@ -2472,4 +2472,400 @@ bool HCLidar::isYJCalGood(std::vector<UCHAR>& lstBuff, int iLen)
 }
 
 
+// CRC-16/XMODEM calculation
+unsigned short HCLidar::crc16Xmodem(unsigned char* ptr, int len)
+{
+	unsigned int i;
+	unsigned short crc = 0x0000;
+	const int size = len;
+    int index{ 0 };
+	while (len--)
+	{
+		if (index == (size - 4) || index == (size - 3)) {
+            index++;
+            continue;
+        }
+		crc ^= (unsigned short)(*(ptr + index)) << 8;
+        index++;
+        for (i = 0; i < 8; ++i) {
+            if (crc & 0x8000)
+                crc = (crc << 1) ^ 0x1021;
+            else
+                crc <<= 1;
+        }
+	}
+	return crc;
+}
+
+// Send command and wait for response
+bool HCLidar::sendCommandAndWaitAck(const std::vector<UCHAR>& cmd, std::vector<UCHAR>& response, int timeout_ms)
+{
+	const int maxRetries = 3;
+	
+	for (int retry = 0; retry < maxRetries; retry++)
+	{
+		// Clear response buffer
+		response.clear();
+
+		// Flush receive buffer before sending
+		m_serial.flushReceiver();
+
+		// Send command
+		if (m_serial.writeData2((UCHAR*)cmd.data(), cmd.size()) != cmd.size())
+		{
+			LOG_ERROR("Failed to send command (retry %d/%d)\n", retry + 1, maxRetries);
+			if (retry < maxRetries - 1)
+			{
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
+				continue;
+			}
+			return false;
+		}
+	
+		// Wait for response with header (A5 A5) and tail (5A 5A) parsing
+		UINT64 startTime = HCHead::getCurrentTimestampMs();
+		UCHAR readBuffer[2048];
+		bool headerFound = false;
+		
+		while (HCHead::getCurrentTimestampMs() - startTime < timeout_ms)
+		{
+			int bytesRead = m_serial.readData(readBuffer, sizeof(readBuffer), 10);
+			if (bytesRead > 0)
+			{
+				for (int i = 0; i < bytesRead; i++)
+				{
+					response.push_back(readBuffer[i]);
+					
+					// Check for header (A5 A5)
+					if (!headerFound)
+					{
+						if (response.size() >= 2)
+						{
+							size_t len = response.size();
+							if (response[len - 2] == 0xA5 && response[len - 1] == 0xA5)
+							{
+								headerFound = true;
+								// Clear buffer and keep only the header
+								std::vector<UCHAR> temp;
+								temp.push_back(0xA5);
+								temp.push_back(0xA5);
+								response.swap(temp);
+							}
+						}
+					}
+					else
+					{
+						// Header found, now check for tail (5A 5A)
+						if (response.size() >= 2)
+						{
+							size_t len = response.size();
+							if (response[len - 2] == 0x5A && response[len - 1] == 0x5A)
+							{
+								// Complete packet found
+								return true;
+							}
+						}
+					}
+				}
+			}
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+
+		LOG_ERROR("Timeout waiting for response (retry %d/%d)\n", retry + 1, maxRetries);
+		
+		// Wait before retry
+		if (retry < maxRetries - 1)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(200));
+		}
+	}
+
+	LOG_ERROR("Failed after %d retries\n", maxRetries);
+	return false;
+}
+
+// Query device info (0x70)
+bool HCLidar::queryDeviceInfo(std::string& model, std::string& version, int& mode)
+{
+	// Request: A5 A5 70 00 00 CC 19 5A 5A
+	std::vector<UCHAR> cmd = { 0xA5, 0xA5, 0x70, 0x00, 0x00, 0xCC, 0x19, 0x5A, 0x5A };
+	std::vector<UCHAR> response;
+
+	if (!sendCommandAndWaitAck(cmd, response, 1000))
+	{
+		LOG_ERROR("Failed to query device info\n");
+		return false;
+	}
+
+	// Response format: A5 A5 70 [length] [model(4 bytes)] [version(2 bytes)] [mode(1 byte)] [crc(2 bytes)] 5A 5A
+	if (response.size() < 12 || response[0] != 0xA5 || response[1] != 0xA5 || response[2] != 0x70)
+	{
+		LOG_ERROR("Invalid device info response\n");
+		return false;
+	}
+
+	// Extract model (4 bytes)
+	model.clear();
+	for (int i = 4; i < 8 && i < response.size(); i++)
+	{
+		model += (char)response[i];
+	}
+
+	// Extract version (2 bytes)
+	char versionStr[16] = { 0 };
+	if (response.size() >= 10)
+	{
+		sprintf(versionStr, "%d.%02d", response[8], response[9]);
+		version = versionStr;
+	}
+
+	// Extract mode (1 byte)
+	if (response.size() >= 11)
+	{
+		mode = response[10];
+	}
+
+	LOG_INFO("Device info - Model: %s, Version: %s, Mode: %d\n", model.c_str(), version.c_str(), mode);
+	return true;
+}
+
+// Jump to boot mode (0xFA)
+bool HCLidar::jumpToBootMode()
+{
+	// Request: A5 A5 54 FA 00 00 01 00 00 00 00 00 4F 5A 5A
+	std::vector<UCHAR> cmd = { 0xA5, 0xA5, 0x54, 0xFA, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x4F, 0x5A, 0x5A };
+	std::vector<UCHAR> response;
+
+	if (!sendCommandAndWaitAck(cmd, response, 500))
+	{
+		LOG_ERROR("Failed to send jump to boot command\n");
+		return false;
+	}
+
+	// Ack: A5 A5 54 FA 00 00 01 00 00 00 00 00 4F 5A 5A
+	if (response.size() >= 14 && response[0] == 0xA5 && response[1] == 0xA5 && 
+		response[2] == 0x54 && response[3] == 0xFA)
+	{
+		LOG_INFO("Jump to boot mode success\n");
+		return true;
+	}
+
+	LOG_ERROR("Jump to boot mode failed\n");
+	return false;
+}
+
+// Send firmware data packet (0x73)
+bool HCLidar::sendFirmwarePacket(UINT8 packetIndex, const UINT8* data, int dataLen, int& nextExpectedIndex)
+{
+	// Max data length is 2048
+	if (dataLen > 2048)
+	{
+		LOG_ERROR("Data length exceeds maximum (2048)\n");
+		return false;
+	}
+
+	// Calculate total packet length: header(5) + index(1) + reserved(4) + data + crc(2) + tail(2)
+	int totalLen = 5 + 1  + 4 + dataLen + 2 + 2;
+	std::vector<UCHAR> packet(totalLen);
+
+	// Header: A5 A5
+	packet[0] = 0xA5;
+	packet[1] = 0xA5;
+
+	// Command: 0x73
+	packet[2] = 0x73;
+
+	// Length: data length + 5 (state + index + reserved)
+	UINT16 len = dataLen + 5;
+	packet[3] = (UINT8)(len & 0xFF);
+	packet[4] = (UINT8)((len >> 8) & 0xFF);
+
+
+	// Packet index
+	packet[5] = packetIndex;
+
+	// Reserved: 00 00 00 00
+	packet[6] = 0x00;
+	packet[7] = 0x00;
+	packet[8] = 0x00;
+	packet[9] = 0x00;
+
+	// Data
+	memcpy(&packet[10], data, dataLen);
+
+	// Tail: 5A 5A
+	packet[totalLen - 2] = 0x5A;
+	packet[totalLen - 1] = 0x5A;
+
+	// Calculate CRC for all bytes except CRC itself and tail
+	unsigned short crc = crc16Xmodem((unsigned char*)packet.data(), totalLen);
+	packet[10 + dataLen] = (UINT8)(crc & 0xFF);
+	packet[10 + dataLen + 1] = (UINT8)((crc >> 8) & 0xFF);
+
+	
+
+	// Send packet and wait for response
+	std::vector<UCHAR> response;
+	if (!sendCommandAndWaitAck(packet, response, 2000))
+	{
+		LOG_ERROR("Failed to send firmware packet %d\n", packetIndex);
+		return false;
+	}
+
+	// Response format: A5 A5 73 06 01 [next_index] 00 00 00 00 00 [crc] 5A 5A
+	if (response.size() >= 14 && response[0] == 0xA5 && response[1] == 0xA5 && 
+		response[2] == 0x73 && response[3] == 0x06)
+	{
+		// Check status
+		if (response[4] == 0x01)
+		{
+			// Success - get next expected index
+			nextExpectedIndex = response[5]+1;
+			LOG_INFO("Firmware packet %d sent successfully, next expected: %d\n", packetIndex, nextExpectedIndex);
+			return true;
+		}
+		else
+		{
+			// Error
+			LOG_ERROR("Firmware packet %d failed with status: %d\n", packetIndex, response[4]);
+			return false;
+		}
+	}
+
+	LOG_ERROR("Invalid firmware packet response\n");
+	return false;
+}
+
+// OTA upgrade interface
+bool HCLidar::otaUpgrade(const char* firmwareFilePath)
+{
+	LOG_INFO("Starting OTA upgrade, firmware file: %s\n", firmwareFilePath);
+
+	// Open firmware file
+	std::ifstream firmwareFile(firmwareFilePath, std::ios::binary | std::ios::ate);
+	if (!firmwareFile.is_open())
+	{
+		LOG_ERROR("Failed to open firmware file: %s\n", firmwareFilePath);
+		return false;
+	}
+
+	// Get file size
+	std::streampos fileSize = firmwareFile.tellg();
+	firmwareFile.seekg(0, std::ios::beg);
+
+	// Read firmware data
+	std::vector<UCHAR> firmwareData(fileSize);
+	firmwareFile.read((char*)firmwareData.data(), fileSize);
+	firmwareFile.close();
+
+	LOG_INFO("Firmware file size: %d bytes\n", (int)fileSize);
+	if(fileSize<100)
+		return false;
+
+
+	// Step 1: Query current device info
+	std::string model, version;
+	int currentMode = 0;
+
+	LOG_INFO("Device in app mode, jumping to boot mode...\n");
+	if (!jumpToBootMode())
+	{
+		LOG_ERROR("Failed to jump to boot mode\n");
+		std::this_thread::sleep_for(std::chrono::milliseconds(200));
+		LOG_INFO("Try get device info\n");
+		if (!queryDeviceInfo(model, version, currentMode))
+		{
+			LOG_ERROR("Failed to query device info,not in boot mode\n");
+			return false;
+		}
+		
+	}
+	else
+	{
+		// Wait for device to reboot into boot mode
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+		// Verify we're in boot mode
+		if (!queryDeviceInfo(model, version, currentMode))
+		{
+			LOG_ERROR("Failed to query device info after jump\n");
+			return false;
+		}
+	}
+
+	if (currentMode != 0x01) // boot mode
+	{
+		LOG_ERROR("Device not in boot mode after jump\n");
+		return false;
+	}
+
+
+	// Step 3: Send firmware packets
+	const int MAX_PACKET_SIZE = 512;
+	int packetIndex = 0;
+	int bytesSent = 0;
+	int totalPackets = (firmwareData.size() + MAX_PACKET_SIZE - 1) / MAX_PACKET_SIZE;
+
+	LOG_INFO("Starting to send %d firmware packets...\n", totalPackets);
+	if(totalPackets>255)
+	{
+		LOG_ERROR("File size too large\n");
+		return false;
+	}
+
+	while (bytesSent < firmwareData.size())
+	{
+		int remaining = firmwareData.size() - bytesSent;
+		int packetSize = (remaining > MAX_PACKET_SIZE) ? MAX_PACKET_SIZE : remaining;
+
+		int nextExpected = 0;
+		if (!sendFirmwarePacket((UINT8)packetIndex, &firmwareData[bytesSent], packetSize, nextExpected))
+		{
+			LOG_ERROR("Failed to send packet %d\n", packetIndex);
+			return false;
+		}
+
+		// Verify we got the expected next index
+		if (nextExpected != (packetIndex + 1) % 256)
+		{
+			LOG_ERROR("Unexpected next index: expected %d, got %d\n", (packetIndex + 1) % 256, nextExpected);
+			return false;
+		}
+
+		bytesSent += packetSize;
+		packetIndex++;
+
+		// Progress logging
+		if (packetIndex % 10 == 0 || bytesSent >= firmwareData.size())
+		{
+			LOG_INFO("OTA progress: %d/%d packets (%d%%)\n", packetIndex, totalPackets, 
+				(int)((bytesSent * 100) / firmwareData.size()));
+		}
+	}
+
+	LOG_INFO("All firmware packets sent successfully\n");
+
+	// Step 4: Wait for device to reboot and verify
+	LOG_INFO("Waiting for device to reboot...\n");
+	std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+
+	// Step 5: Query device info again to verify upgrade
+	if (!queryDeviceInfo(model, version, currentMode))
+	{
+		LOG_ERROR("Failed to verify upgrade\n");
+		return false;
+	}
+
+	if (currentMode == 0x02) // Should be in app mode after successful upgrade
+	{
+		LOG_INFO("OTA upgrade completed successfully!\n");
+		return true;
+	}
+	else
+	{
+		LOG_ERROR("Device not in app mode after upgrade\n");
+		return false;
+	}
+}
+
 }

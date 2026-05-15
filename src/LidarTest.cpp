@@ -107,7 +107,19 @@ void LidarTest::initLidar()
 
 	}
 		
-
+#if 0
+	std::string strFile = "./fwPNA3_app_V2.13_20260429_7Hz.bin";
+	if (device.otaUpgrade(strFile.c_str()))
+	{
+		printf("LidarTest: Upgrade Fireware success!\n");
+	}
+	else
+	{
+		printf("LidarTest: Upgrade Fireware failed!\n");
+	}
+	device.cleanup();
+	return;
+#endif		
 	if (!device.start())
 	{
 		device.cleanup();
@@ -144,7 +156,7 @@ void LidarTest::initLidar()
 				//printf("LidarTest: Poll Rx Points=%d\n", lstG.size());
 				for (auto sInfo : lstG)
 				{
-					//printf("LidarTest: Angle=%0.4f,Dist=%d\n", sInfo.dAngle, sInfo.u16Dist);
+					printf("LidarTest: Angle=%0.4f,Dist=%d\n", sInfo.dAngle, sInfo.u16Dist);
 				}
 			}
 			else
