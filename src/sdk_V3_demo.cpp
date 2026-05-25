@@ -24,7 +24,7 @@ int main()
 	{
 		LidarTest *lidarTest = new LidarTest();
 
-		std::this_thread::sleep_for(std::chrono::seconds(100));
+		std::this_thread::sleep_for(std::chrono::seconds(20));
 		std::this_thread::yield();
 
 		if (lidarTest) 

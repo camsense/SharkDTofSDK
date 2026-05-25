@@ -15,7 +15,7 @@
 
 namespace CamsenseDTOF {
 
-#define SDK_VER                    (char*)"V3.3.1"
+#define SDK_VER                    (char*)"V3.3.2"
 
 #define SHARK_ENABLE               1
 
@@ -323,26 +323,26 @@ namespace CamsenseDTOF {
 	{
 		float n1_org;              //原始n1值
 		float n2_org;              //原始0n2值
-		UINT8 ulower_0 = 0;         //分段标定第0段阈值
-		UINT8 uupper_0 = 1;         //分段标定第0段阈值
-		UINT8 ulower_1 = 1;         //分段标定第1段阈值
-		UINT8 uupper_1 = 2;         //分段标定第1段阈值
-		UINT8 ulower_2 = 2;         //分段标定第2段阈值
-		UINT8 uupper_2 = 4;         //分段标定第2段阈值
-		UINT8 ulower_3 = 4;         //分段标定第3段阈值
-		UINT8 uupper_3 = 6;         //分段标定第3段阈值
-		UINT8 ulower_4 = 6;         //分段标定第4段阈值
-		UINT8 uupper_4 = 8;         //分段标定第4段阈值
-		float n1_subsection_0;     //分段标定第0段n1值  
-		float n2_subsection_0;     //分段标定第0段n2值
-		float n1_subsection_1;     //分段标定第1段n1值  
-		float n2_subsection_1;     //分段标定第1段n2值
-		float n1_subsection_2;     //分段标定第2段n1值
-		float n2_subsection_2;     //分段标定第2段n2值
-		float n1_subsection_3;     //分段标定第3段n1值
-		float n2_subsection_3;     //分段标定第3段n2值
-		float n1_subsection_4;     //分段标定第4段n1值
-		float n2_subsection_4;     //分段标定第4段n2值
+		UINT8 ulower_0 = 0;         //锟街段标定锟斤拷0锟斤拷锟斤拷值
+		UINT8 uupper_0 = 1;         //锟街段标定锟斤拷0锟斤拷锟斤拷值
+		UINT8 ulower_1 = 1;         //锟街段标定锟斤拷1锟斤拷锟斤拷值
+		UINT8 uupper_1 = 2;         //锟街段标定锟斤拷1锟斤拷锟斤拷值
+		UINT8 ulower_2 = 2;         //锟街段标定锟斤拷2锟斤拷锟斤拷值
+		UINT8 uupper_2 = 4;         //锟街段标定锟斤拷2锟斤拷锟斤拷值
+		UINT8 ulower_3 = 4;         //锟街段标定锟斤拷3锟斤拷锟斤拷值
+		UINT8 uupper_3 = 6;         //锟街段标定锟斤拷3锟斤拷锟斤拷值
+		UINT8 ulower_4 = 6;         //锟街段标定锟斤拷4锟斤拷锟斤拷值
+		UINT8 uupper_4 = 8;         //锟街段标定锟斤拷4锟斤拷锟斤拷值
+		float n1_subsection_0;     //锟街段标定锟斤拷0锟斤拷n1值  
+		float n2_subsection_0;     //锟街段标定锟斤拷0锟斤拷n2值
+		float n1_subsection_1;     //锟街段标定锟斤拷1锟斤拷n1值  
+		float n2_subsection_1;     //锟街段标定锟斤拷1锟斤拷n2值
+		float n1_subsection_2;     //锟街段标定锟斤拷2锟斤拷n1值
+		float n2_subsection_2;     //锟街段标定锟斤拷2锟斤拷n2值
+		float n1_subsection_3;     //锟街段标定锟斤拷3锟斤拷n1值
+		float n2_subsection_3;     //锟街段标定锟斤拷3锟斤拷n2值
+		float n1_subsection_4;     //锟街段标定锟斤拷4锟斤拷n1值
+		float n2_subsection_4;     //锟街段标定锟斤拷4锟斤拷n2值
 		void reset()
 		{
 			n1_org = 0;
@@ -421,10 +421,10 @@ namespace CamsenseDTOF {
 		UINT16       u16B2;
 		UINT8        u8ConfigVer[2];
 		UINT8        u8HardwareVer[4];
-		UINT16       u16AngleOffset;  //2 角度补偿（单位0.01度）
+		UINT16       u16AngleOffset;  //2 锟角度诧拷锟斤拷锟斤拷锟斤拷位0.01锟饺ｏ拷
 		UINT8        u8LDDirection;
 		UINT8        u8CorrectionEnble;  //
-		UINT8        uReserved2[4];  //5 预留
+		UINT8        uReserved2[4];  //5 预锟斤拷
 		UINT8        uSN[20];      //
 	}tsPackUID;
 

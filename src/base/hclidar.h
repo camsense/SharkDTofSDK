@@ -387,8 +387,8 @@ namespace CamsenseDTOF {
 		std::atomic<int>         m_iMsgID;
 		std::string              m_strSN = "";
 
-		std::promise<void> m_prom;
-		std::future<void> m_fut;
+		//std::promise<void> m_prom;
+		//std::future<void> m_fut;
 
 		void calLidarParaBySpeed();
 		bool getHealthMsg(std::vector<UCHAR>& lstBuff);

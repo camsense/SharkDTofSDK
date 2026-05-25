@@ -213,7 +213,7 @@ bool HCLidar::start()
 	initPara();
 	try
 	{
-		m_fut = m_prom.get_future();
+		//m_fut = m_prom.get_future();
 		m_bScanning = true;
 		m_threadWork = std::thread(&HCLidar::threadWork, this);
 		m_threadParse = std::thread(&HCLidar::threadParse, this);
@@ -318,9 +318,9 @@ void HCLidar::threadWork()
 {
     while (m_bScanning)
     {
-		if(m_iSDKStatus < SDK_GOT_SN)
-			readSNFromLidar();
-		else
+		//if(m_iSDKStatus < SDK_GOT_SN)
+			//readSNFromLidar();
+		//else
 			readData();
     }
 }
@@ -397,7 +397,7 @@ void HCLidar::readSNFromLidar()
 		}
 		else
 		{
-			m_prom.set_value();
+			//m_prom.set_value();
 			std::unique_lock <std::mutex> lck(m_mtxInit);
             m_bReady = true;
             m_cvInit.notify_all();
@@ -491,11 +491,11 @@ void HCLidar::threadParse()
 
 	while (m_bScanning)
 	{
-		if (m_iSDKStatus <= SDK_READING_SN )
+		/*if (m_iSDKStatus <= SDK_READING_SN )
 		{			
 			u64Start = HCHead::getCurrentTimestampUs();
 			continue;
-		}
+		}*/
 
 		checkReadPacketData();
 
@@ -642,6 +642,12 @@ bool HCLidar::processData()
     int iMsgID = 0;
     for(int i=0;i<m_lstBuff.size()-1;i++)
     {
+		if ((UCHAR)m_lstBuff.at(i) == 0x5A && (UCHAR)m_lstBuff.at(i + 1) == 0xAA)//SN
+		{
+			iMsgID = MSG_NEW_SN;
+			iIndex = i;
+			break;
+		}
         
         if((UCHAR)m_lstBuff.at(i) == 0x55 && (UCHAR)m_lstBuff.at(i+1) == 0xAA)//point cloud
         {
@@ -671,9 +677,28 @@ bool HCLidar::processData()
 		//LOG_INFO("HCSDK Error: find mes header,buff size=%d\n" , m_lstBuff.size());
     }
 
-
+	bool bGetSN = false;
     switch (iMsgID) {
-    case MSG_POINTCLOUD:
+    case MSG_NEW_SN:
+	{
+		bGetSN = getNewSNInfo(m_lstBuff);
+
+		if(!m_bHadID && bGetSN)
+		{
+			std::unique_lock <std::mutex> lck(m_mtxInit);
+        	m_bReady = true;
+            m_cvInit.notify_all();
+
+			m_bGetIDTimeOut = false;
+			m_bHadID = true;
+			m_iSDKStatus = SDK_GOT_SN;
+			
+		}
+		 
+		return bGetSN;   
+	}
+		
+	case MSG_POINTCLOUD:
 		return getPointCloud(m_lstBuff);
 
     }
@@ -820,7 +845,7 @@ bool HCLidar::getNewSNInfo(std::vector<UCHAR>& lstBuff)
 			m_strFirmwareVer = chTemp;
 
 
-			m_bHadID = true;
+			//m_bHadID = true;
 
 
 			memcpy(&m_sPackUID, &sD2M7.sSN, sizeof(tsSDKSN));
@@ -917,7 +942,7 @@ bool HCLidar::getNewSNInfo(std::vector<UCHAR>& lstBuff)
 			m_strFirmwareVer = chTemp;
 
 
-			m_bHadID = true;
+			//m_bHadID = true;
 
 
 			memcpy(&m_sPackUID, &sNewInfo, sizeof(tsSDKSN));
@@ -1029,7 +1054,7 @@ bool HCLidar::getNewSNInfo(std::vector<UCHAR>& lstBuff)
 			m_strFirmwareVer = chTemp; 
 
 
-			m_bHadID = true;
+			//m_bHadID = true;
 
 
 
