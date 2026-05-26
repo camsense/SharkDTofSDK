@@ -71,6 +71,7 @@ namespace CamsenseDTOF {
 		bool    bAngOffset;
 		int     iFPSNor;
 		int     iSpeedNor;
+		UINT64  u64TransNs;
 		tsLDSAttr()
 		{
 			dAngleOffsetD = 21;
@@ -87,13 +88,14 @@ namespace CamsenseDTOF {
 			bAngOffset = false;
 			iFPSNor = 2080;
 			iSpeedNor = 312;
+			u64TransNs = 3.125*1000*1000;//115200bps,(8*3+12)*10bit
 		}
 	}tsLDSAttr;
 
 	typedef struct tsSDKPara
 	{
 		int           iNoDataMS;  //warning timeout ,ms, read data from serial port is null,default 1000ms
-		int           iDisconnectMS;   //lidar disconnected£¬ms, defualt 3000ms
+		int           iDisconnectMS;   //lidar disconnectedï¿½ï¿½ms, defualt 3000ms
 		int           iFPSContinueMS;  // FPS continue abnormal, ms ,default 5000ms
 		int           iSpeedContinueMS; // speed continue abnormal, ms ,default 3500ms
 		int           iCoverContinueMS;// covered  duration, ms ,default 3500ms
@@ -241,7 +243,7 @@ namespace CamsenseDTOF {
 		bool         bGrayTwoByte; // true  u16Gray 2byte ,false u16Gray 1byte 
 		UINT64       u64TimeStampMs;    // timestamp ,ms  
 		UINT64       u64TimeStampNs;    // timestamp ,ns  
-		float        fTemperature;//ÎÂ¶È
+		float        fTemperature;//ï¿½Â¶ï¿½
 		bool         bOverRange;
 		tsPointCloud() :
 			bValid(true),

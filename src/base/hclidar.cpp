@@ -42,6 +42,7 @@ void HCLidar::initPara()
 	m_sStatistic.resetAll();
 	m_bCheckSpeed = false;
 	m_bYJStart = false;
+	
 }
 
 
@@ -102,6 +103,7 @@ bool HCLidar::setLidarPara(const char* chLidarModel)
 
 		m_sAttr.iFPSNor = FPS_4000_PMA1;
 		m_sAttr.iSpeedNor = SPEED_420_NOR;
+		m_sAttr.u64TransNs = 2.604 * 1000 * 1000;//(16*3+12)*10/230400 * 1000 * 1000;
 	}
 	else if (m_strLidarModel == PNA3)
 	{
@@ -119,6 +121,8 @@ bool HCLidar::setLidarPara(const char* chLidarModel)
 
 		m_sAttr.iFPSNor = FPS_4000_PMA1;
 		m_sAttr.iSpeedNor = SPEED_360_NOR;
+
+		m_sAttr.u64TransNs = 2.604 * 1000 * 1000;//(16*3+12)*10/230400 * 1000 * 1000;
 	}
 	else if (m_strLidarModel == PMA2)
 	{
@@ -1292,7 +1296,7 @@ bool HCLidar::parserRangeEX(LstPointCloud &resultRange, const char * chBuff, int
 
 
 		tsPointCloud sData;
-		sData.u64TimeStampNs = epochTime - u64Inter *(in_numData-1-i);
+		sData.u64TimeStampNs = epochTime - u64Inter *(in_numData-1-i) - m_sAttr.u64TransNs;
 		//LOG_INFO("TS:%lld\n", sData.u64TimeStampNs);
 
 		memcpy(data, (UCHAR*)chBuff + pre_bytes + i * data_size, sizeof(UCHAR) * data_size);

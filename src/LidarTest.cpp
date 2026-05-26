@@ -85,7 +85,7 @@ void LidarTest::initLidar()
 	}
 	*/
 
-	int iPort = getPort();
+	//int iPort = getPort();
 
 	int iBaud = 230400;
 
@@ -128,7 +128,7 @@ void LidarTest::initLidar()
 		
 	}
 
-	device.setCircleDataMode();
+	//device.setCircleDataMode();
 
 
 	//Power on lidar
@@ -153,10 +153,10 @@ void LidarTest::initLidar()
 			CamsenseDTOF::LstPointCloud lstG;
 			if (device.getRxPointClouds(lstG))
 			{
-				printf("LidarTest: Poll Rx Points=%d\n", lstG.size());
+				//printf(">>>>>>>LidarTest: Poll Rx Points=%d\n", lstG.size());
 				for (auto sInfo : lstG)
 				{
-					//printf("LidarTest: Angle=%0.4f,Dist=%d\n", sInfo.dAngle, sInfo.u16Dist);
+					printf("%llu,%0.4f,%d\n",sInfo.u64TimeStampNs, sInfo.dAngle, sInfo.u16Dist);
 				}
 			}
 			else
