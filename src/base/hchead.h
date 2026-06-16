@@ -15,7 +15,7 @@
 
 namespace CamsenseDTOF {
 
-#define SDK_VER                    (char*)"V3.3.4"
+#define SDK_VER                    (char*)"V3.3.5"
 
 #define SHARK_ENABLE               1
 

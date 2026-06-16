@@ -1049,7 +1049,7 @@ bool HCLidar::getNewSNInfo(std::vector<UCHAR>& lstBuff)
 
 			memset(chTemp, 0, 128);
 
-			sprintf(chTemp, "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c",
+			sprintf(chTemp, "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c",
 				sPNA3.u8SN[0],
 				sPNA3.u8SN[1],
 				sPNA3.u8SN[2],
@@ -1069,7 +1069,14 @@ bool HCLidar::getNewSNInfo(std::vector<UCHAR>& lstBuff)
 				sPNA3.u8SN[16],
 				sPNA3.u8SN[17],
 				sPNA3.u8SN[18],
-				sPNA3.u8SN[19]);
+				sPNA3.u8SN[19],
+				sPNA3.u8SN[20],
+				sPNA3.u8SN[21],
+				sPNA3.u8SN[22],
+				sPNA3.u8SN[23],
+				sPNA3.u8SN[24],
+				sPNA3.u8SN[25],
+				sPNA3.u8SN[26]);
 
 
 			LOG_INFO("Get 27byte SN:%s\n", chTemp);
