@@ -15,7 +15,7 @@
 
 namespace CamsenseDTOF {
 
-#define SDK_VER                    (char*)"V3.3.3"
+#define SDK_VER                    (char*)"V3.3.4"
 
 #define SHARK_ENABLE               1
 
@@ -88,6 +88,7 @@ namespace CamsenseDTOF {
 #define  PMA2                           "PMA2"
 #define  PXA2_A                         "PXA2_A"
 #define  PNA3                           "PNA3"
+#define  PMF3                           "PMF3"
 
 #define  PI_HC                          3.141592653589793
 
@@ -404,6 +405,12 @@ namespace CamsenseDTOF {
 		tsSDKSN           sSN;
 		tsSubsection      sSub;
 	}tsSDKIDD2M7;
+
+	typedef struct tsSDKIDPNA3
+	{
+		tsSDKSN           sSN;
+		UCHAR             u8SN[7];
+	}tsSDKIDPNA3;
 
 	typedef struct tsPackUID
 	{

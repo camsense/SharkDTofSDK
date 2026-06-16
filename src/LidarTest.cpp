@@ -85,14 +85,14 @@ void LidarTest::initLidar()
 	}
 	*/
 
-	//int iPort = getPort();
+	int iPort = getPort();
 
 	int iBaud = 230400;
 
 #ifdef _WIN32
 	rtn = device.initialize("//./com5", iBaud, "PNA3" );                     // For windows OS
 #else
-	rtn = device.initialize("/dev/ttyUSB0",  iBaud,  "PNA3" );               // For Linux OS
+	rtn = device.initialize("/dev/ttyUSB1",  iBaud,  "PMF3" );               // For Linux OS
 #endif
 
 	if (rtn != 1)
@@ -128,7 +128,7 @@ void LidarTest::initLidar()
 		
 	}
 
-	//device.setCircleDataMode();
+	device.setCircleDataMode();
 
 
 	//Power on lidar
@@ -153,10 +153,10 @@ void LidarTest::initLidar()
 			CamsenseDTOF::LstPointCloud lstG;
 			if (device.getRxPointClouds(lstG))
 			{
-				//printf(">>>>>>>LidarTest: Poll Rx Points=%d\n", lstG.size());
+				printf(">>>>>>>LidarTest: Poll Rx Points=%d\n", lstG.size());
 				for (auto sInfo : lstG)
 				{
-					printf("%llu,%0.4f,%d\n",sInfo.u64TimeStampNs, sInfo.dAngle, sInfo.u16Dist);
+					//printf("%llu,%0.4f,%d\n",sInfo.u64TimeStampNs, sInfo.dAngle, sInfo.u16Dist);
 				}
 			}
 			else

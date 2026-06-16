@@ -141,6 +141,25 @@ bool HCLidar::setLidarPara(const char* chLidarModel)
 		m_sAttr.iFPSNor = FPS_PXA2_NOR;
 		m_sAttr.iSpeedNor = SPEED_300_NOR;
 	}
+	else if (m_strLidarModel == PMF3)
+	{
+		m_sAttr.dAngleOffsetD = 0;
+		m_sAttr.dBaseline_mm = 17;
+		m_sAttr.dTheta_d = 0;
+		m_sAttr.iFPSMax = FPS_PMA1_MAX;
+		m_sAttr.iFPSMin = FPS_PMA1_MIN;
+		m_sAttr.iSpeedMax = SPEED_360_MAX;
+		m_sAttr.iSpeedMin = SPEED_360_MIN;
+		m_sAttr.dAngleStep = 360.0 * SPEED_360_NOR / 60 / FPS_4000_PMA1;
+		m_sAttr.dCirclePoints = FPS_4000_PMA1 * 60 / SPEED_360_NOR;
+		m_sAttr.u64TSStepNs = 1e9 / FPS_4000_PMA1;
+		m_sAttr.bAngOffset = true;
+
+		m_sAttr.iFPSNor = FPS_4000_PMA1;
+		m_sAttr.iSpeedNor = SPEED_360_NOR;
+
+		m_sAttr.u64TransNs = 2.604 * 1000 * 1000;//(16*3+12)*10/230400 * 1000 * 1000;
+	}
     else
     {
 
@@ -392,7 +411,7 @@ void HCLidar::readSNFromLidar()
 
 		if(iIndex>0)
 		{
-			HCHead::eraseBuff(m_lstBuff,iIndex);
+			HCHead::eraseBuff(lstSNData,iIndex);
 		}
 
 		if (!getNewSNInfo(lstSNData))
@@ -763,7 +782,7 @@ bool HCLidar::calStartInfo(char* ch,int iLen)
 bool HCLidar::getNewSNInfo(std::vector<UCHAR>& lstBuff)
 {
 
-	LOG_INFO("getNewSNInfo!\n");
+	//LOG_INFO("getNewSNInfo!\n");
 
 	if (lstBuff.size() < sizeof(tsSDKSN))
 		return false;
@@ -866,7 +885,7 @@ bool HCLidar::getNewSNInfo(std::vector<UCHAR>& lstBuff)
 
 			LOG_ERROR("New lidar factory info cal error\n");
 			setReadCharsError(ERR_START_INFO);
-			return true;
+			return false;
 
 		}
 	}
@@ -982,7 +1001,104 @@ bool HCLidar::getNewSNInfo(std::vector<UCHAR>& lstBuff)
 
 			LOG_ERROR("New lidar factory info cal error\n");
 			setReadCharsError(ERR_START_INFO);
+			return false;
+
+		}
+	}
+	else if (sNewInfo.u16Len == 68)//PNA3
+	{
+		if (lstBuff.size() < sizeof(tsSDKIDPNA3))
+			return false;
+
+		tsSDKIDPNA3 sPNA3;
+		memcpy(&sPNA3, lstBuff.data(), sizeof(tsSDKIDPNA3));
+		if (calStartInfo((char*)lstBuff.data(), sizeof(tsSDKIDPNA3)))
+		{
+			HCHead::eraseBuff(lstBuff, sizeof(tsSDKIDPNA3));
+
+			char chTemp[128] = { 0 };
+			sprintf(chTemp, "%c%c",
+				sPNA3.sSN.u8FacInfo[0], sPNA3.sSN.u8FacInfo[1]);
+			m_strFactoryInfo = chTemp;
+
+			memset(chTemp, 0, 128);
+			if (m_bSetAngOffset) {
+				if (m_sAttr.bAngOffset && sPNA3.sSN.u16Ang != 0xffff) {
+					m_dAngOffset = (short)sPNA3.sSN.u16Ang * 0.01;
+					m_dAngOffset = fabs(m_dAngOffset) > 3.0 ? 0 : m_dAngOffset;
+					LOG_INFO("ZeroAngle=%0.2f\n", m_dAngOffset);
+				}
+			}
+			if (sPNA3.sSN.u8Reserve1[0] == 0xFF)
+				sprintf(chTemp, "%c%d%c", sPNA3.sSN.u8FacInfo[2], sPNA3.sSN.u8FacInfo[3], sPNA3.sSN.u8FacInfo[4]);
+			else
+			{
+				if (sPNA3.sSN.u8FacInfo[3] >= 0x40)
+					sprintf(chTemp, "%c%c%c%c", sPNA3.sSN.u8FacInfo[2], sPNA3.sSN.u8FacInfo[3], sPNA3.sSN.u8FacInfo[4], sPNA3.sSN.u8Reserve1[0]);
+				else
+					sprintf(chTemp, "%c%d%c%c", sPNA3.sSN.u8FacInfo[2], sPNA3.sSN.u8FacInfo[3], sPNA3.sSN.u8FacInfo[4], sPNA3.sSN.u8Reserve1[0]);
+			}
+				
+
+			std::string strModel = chTemp;
+			if (strModel != m_strLidarModel)
+			{
+				LOG_WARNING("Lidar model error init:%s,device:%s\n", (char*)m_strLidarModel.c_str(), (char*)strModel.c_str());
+				//setReadCharsError(ERR_DEV_MODEL);
+				setLidarPara(chTemp);
+			}
+
+			memset(chTemp, 0, 128);
+
+			sprintf(chTemp, "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c",
+				sPNA3.sSN.u8SN[0],
+				sPNA3.sSN.u8SN[1],
+				sPNA3.sSN.u8SN[2],
+				sPNA3.sSN.u8SN[3],
+				sPNA3.sSN.u8SN[4],
+				sPNA3.sSN.u8SN[5],
+				sPNA3.sSN.u8SN[6],
+				sPNA3.sSN.u8SN[7],
+				sPNA3.sSN.u8SN[8],
+				sPNA3.sSN.u8SN[9],
+				sPNA3.sSN.u8SN[10],
+				sPNA3.sSN.u8SN[11],
+				sPNA3.sSN.u8SN[12],
+				sPNA3.sSN.u8SN[13],
+				sPNA3.sSN.u8SN[14],
+				sPNA3.sSN.u8SN[15],
+				sPNA3.sSN.u8SN[16],
+				sPNA3.sSN.u8SN[17],
+				sPNA3.sSN.u8SN[18],
+				sPNA3.sSN.u8SN[19]);
+
+
+			LOG_INFO("Get 27byte SN:%s\n", chTemp);
+			m_strDevID = chTemp;
+
+			memset(chTemp, 0, 128);
+			sprintf(chTemp, "00.00.%02X.%02X",
+				sPNA3.sSN.u8CalVer[0], sPNA3.sSN.u8CalVer[1]);
+
+			m_strFirmwareVer = chTemp;
+
+
+			//m_bHadID = true;
+
+
+			memcpy(&m_sPackUID, &sPNA3.sSN, sizeof(tsSDKSN));
+
+
+			//LOG_INFO("New lidar factory info:%s,Hardware ver:%s\n", (char*)m_strFactoryInfo.c_str(), (char*)m_strHardwareVer.c_str());
 			return true;
+		}
+		else
+		{
+			HCHead::eraseBuff(lstBuff, sizeof(tsSDKIDPNA3));
+
+			LOG_ERROR("New lidar factory info cal error\n");
+			setReadCharsError(ERR_START_INFO);
+			return false;
 
 		}
 	}
@@ -1048,7 +1164,7 @@ bool HCLidar::getNewSNInfo(std::vector<UCHAR>& lstBuff)
 				sNewInfo.u8SN[19]);
 
 
-			LOG_INFO("Get SN:%s\n", chTemp);
+			LOG_INFO("Get 20byte SN:%s\n", chTemp);
 			m_strDevID = chTemp;
 
 			memset(chTemp, 0, 128);
@@ -1057,10 +1173,7 @@ bool HCLidar::getNewSNInfo(std::vector<UCHAR>& lstBuff)
 
 			m_strFirmwareVer = chTemp; 
 
-
 			//m_bHadID = true;
-
-
 
 			memcpy(&m_sPackUID, &sNewInfo, sizeof(tsSDKSN));
 
@@ -1074,7 +1187,7 @@ bool HCLidar::getNewSNInfo(std::vector<UCHAR>& lstBuff)
 
 			LOG_ERROR("New lidar factory info cal error\n");
 			setReadCharsError(ERR_START_INFO);
-			return true;
+			return false;
 
 		}
 	}
