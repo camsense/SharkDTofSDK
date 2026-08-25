@@ -90,10 +90,10 @@ void LidarTest::initLidar()
 	int iBaud = 230400;
 
 #ifdef _WIN32
-	rtn = device.initialize("//./com5", iBaud, "PNA3" );                     // For windows OS
+	rtn = device.initialize("//./com5", iBaud, "PNAS" );                     // For windows OS
 #else
 	std::string strPort = "/dev/ttyUSB" + std::to_string(iPort);
-	rtn = device.initialize(strPort.c_str(),  iBaud,  "PNA3" );               // For Linux OS
+	rtn = device.initialize(strPort.c_str(),  iBaud,  "PNAS" );               // For Linux OS
 #endif
 
 	if (rtn != 1)

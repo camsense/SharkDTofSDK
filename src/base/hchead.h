@@ -89,6 +89,7 @@ namespace CamsenseDTOF {
 #define  PXA2_A                         "PXA2_A"
 #define  PNA3                           "PNA3"
 #define  PMF3                           "PMF3"
+#define  PNAS                           "PNAS"
 
 #define  PI_HC                          3.141592653589793
 

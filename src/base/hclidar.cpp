@@ -143,6 +143,25 @@ bool HCLidar::setLidarPara(const char* chLidarModel)
 
 		m_sAttr.u64TransNs = 2.604 * 1000 * 1000;//(16*3+12)*10/230400 * 1000 * 1000;
 	}
+	else if (m_strLidarModel == PNAS)
+	{
+		m_sAttr.dAngleOffsetD = 0;
+		m_sAttr.dBaseline_mm = 17;
+		m_sAttr.dTheta_d = 0;
+		m_sAttr.iFPSMax = FPS_PMA1_MAX;
+		m_sAttr.iFPSMin = FPS_PMA1_MIN;
+		m_sAttr.iSpeedMax = SPEED_360_MAX;
+		m_sAttr.iSpeedMin = SPEED_360_MIN;
+		m_sAttr.dAngleStep = 360.0 * SPEED_360_NOR / 60 / FPS_4000_PMA1;
+		m_sAttr.dCirclePoints = FPS_4000_PMA1 * 60 / SPEED_360_NOR;
+		m_sAttr.u64TSStepNs = 1e9 / FPS_4000_PMA1;
+		m_sAttr.bAngOffset = true;
+
+		m_sAttr.iFPSNor = FPS_4000_PMA1;
+		m_sAttr.iSpeedNor = SPEED_360_NOR;
+
+		m_sAttr.u64TransNs = 2.604 * 1000 * 1000;//(16*3+12)*10/230400 * 1000 * 1000;
+	}
 	else if (m_strLidarModel == PMA2)
 	{
 		m_sAttr.dAngleOffsetD = 0;
